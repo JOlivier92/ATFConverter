@@ -39,12 +39,55 @@ class GraphMaker:
 		self.AverageList = []
 		self.allYPoints = []
 		self.outputList = []
+		#self.listofVars = listofVars
 	
+	def classController(self):
+		pass
+		#numberOfGroups=self.listofVars[0]
+		#lengthOfGroups=self.listofVars[1]
+		#currentRange,numberofSteps=self.listofVars[2][0],self.listofVars[2][1]
+		#stepSize=self.listofVars[2]
+		#counter=0
+		#for i in range(numberOfGroups):
+			#self.dataSaver(lengthOfGroups,counter)
+			#self.grapher(lengthOfGroups,counter)
+			#counter+=lengthOfGroups
+		#self.processedDataParser()
+	def dataSaver(self,lengthOfGroups,counter):
+		#Iterate through each file
+		for i in range(0,len(self.masterList)):
+			file = self.masterList[i]
+			stepList = []
+			#Iterate through each step in the file (each square wave)
+			for j in range(0,len(file)-1):
+				step = file[j]
+				nextStep = file[j+1]
+				#Adjust the value to make the difference 50 instead of ~49-51
+				adjustedValue = file[i][2]*(stepSize/abs(tple[1][1]-tple[0][1]))
+				stepList.append(adjustedValue)
+			self.outputList.append(stepList)
+		
+		counter = 1
+		import datetime
+		file1 = open("processedData"+datetime.datetime.now().strftime('_%Y_%b_%d_%H_%M_%S')+".txt","w")
+		for i in range(len(outputList)):
+			currentCurrents = outputList[i]
+			for j in range(len(currentCurrents)):
+				if j == 0:
+					file1.write(str(counter)+"\t")
+				file1.write(str(currentCurrents[j])+"\t")
+			counter+=1
+			file1.write("\n")
+		file1.close()
+	def processedDataParser(self):
+		pass
+		"""
+
+		"""
 	def grapher(self):
 		import matplotlib.pyplot as plt
 		import sys
 		import numpy as np
-		
 		
 		plt.figure(figsize=(4,2))
 
@@ -62,6 +105,7 @@ class GraphMaker:
                    left='on', labelleft='on',\
                    right='off', labelright='off',\
                    top='off', labeltop='off')
+		
 		overallMax = -float('inf')
 		overallMin = float('inf')
 		derivativeMax = -float('inf')
@@ -72,7 +116,7 @@ class GraphMaker:
 		#Iterate through each file in the listOfFiles
 		averageY = [[] for i in range(8)]
 		averageYDeriv = [[] for i in range(8)]
-		
+		outputList = []
 		for h in range(0,len(self.masterList)):
 			print(h)
 			if h != 0:
@@ -82,13 +126,17 @@ class GraphMaker:
 			yVals = []
 			file = self.masterList[h]
 			firstDerivativeY = [0]
+			stepList = []
+			
 			for i in range(0,len(file)-1):
 				tple = file[i]
 				nextTple = file[i+1]
 				#Normalize value due to step size
 				currentVal = file[i][2]*(50/abs(tple[1][1]-tple[0][1]))
+				print(file[i][2],tple[1][1],tple[0][1],currentVal)
+				stepList.append(currentVal)
 				if i != 0:
-					print(h,i,file[i-1][2],file[i-1])
+					print(h,i,file[i-1])
 					firstDerivativeY.append(currentVal/((file[i-1][2]+.01)*(200/abs(tple[1][1]-tple[0][1])))-1)
 				xVals.append(tple[1][1])
 				yVals.append(currentVal)
@@ -132,6 +180,7 @@ class GraphMaker:
 						derivativeMin = firstDerivativeY[-1]
 					elif firstDerivativeY[-1]>derivativeMax:
 						derivativeMax = firstDerivativeY[-1]
+			outputList.append(stepList)
 			
 			#if h == lengthOfGroups-1:
 			"""TO DO: Make a helper function to combine all of these lines"""
@@ -230,6 +279,22 @@ class GraphMaker:
 				panel1.minorticks_on
 				panel2.grid(True, which='both')
 				panel2.minorticks_on
+		counter = 1
+		import datetime
+		file1 = open("processedData"+datetime.datetime.now().strftime('_%Y_%b_%d_%H_%M_%S')+".txt","w")
+		for i in range(len(outputList)):
+			currentCurrents = outputList[i]
+			#print(outputList[i],end='\t')
+			for j in range(len(currentCurrents)):
+				if j == 0:
+					print(counter,end="\t")
+					file1.write(str(counter)+"\t")
+				print(currentCurrents[j],end="\t")
+				file1.write(str(currentCurrents[j])+"\t")
+			counter+=1
+			print("\n")
+			file1.write("\n")
+		file1.close()
 		
 		panel1.set_xlim(-620,-180)
 		panel1.set_ylim(overallMin-50,overallMax+50)
@@ -305,22 +370,19 @@ class DataParser:
 		self.graphOutput = graphOutput
 		self.masterList = listofFiles
 
-	def parser(self):
+	def parser(self,steps=9,PulseWidth=100,offset=1000):
 		import numpy as np
+		import sys
 		listofCurrents = []
 
 		#Iterates through all of the files that is in the currentWorkingDirectory/ATFFiles
-		counter = 0
+		firstStart=1411
 		for wholeFile in self.masterList:
 			internalFileList = []
 			#Assuming 9 steps, will change with GUI. 
-			for i in range(0,8):
-				firstStart = 1411
-				PulseWidth=100
-				#Value between FULL steps
-				offset = 1000
+			for i in range(0,steps-1):
 				#Finds position of median in sorted list (depends on pulse width)
-				median = int((firstStart+PulseWidth-firstStart)/2)
+				median = int(PulseWidth/2)
 				#Sorts the currents at the top of the square wave
 				sortedbyCurrentTop = sorted(wholeFile[firstStart+offset*i:(firstStart+100)+offset*i],key=lambda current:current[1])
 				#Sorts the currents at the bottom of the square wave
